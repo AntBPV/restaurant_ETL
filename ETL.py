@@ -1,9 +1,22 @@
+import kagglehub
+import os
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 
 def create_spark_session():
     return SparkSession.builder.appName("Restaurant_ETL").getOrCreate()
+
+def download_from_kaggle():
+    dataset = "shirouchi/restaurant-customer-satisfaction"
+
+    local_path = kagglehub.dataset_download(dataset)
+
+    for file in os.listdir(local_path):
+        if file.endswith(".csv"):
+            return os.path.join(local_path, file)
+
+    raise FileNotFoundError("No se encontró ningún archivo CSV en el dataset descargado.")
 
 def cleaner(df):
     for col in df.columns:
@@ -50,7 +63,9 @@ def cleaner(df):
 
 def main():
     spark = create_spark_session()
-    df = spark.read.csv("restaurant_customer_satisfaction.csv", header = True, inferSchema = True)
+    csv_path = download_from_kaggle()
+
+    df = spark.read.csv(csv_path, header=True, inferSchema=True)
 
     df_clean = cleaner(df)
 
